@@ -13,17 +13,28 @@ import {
 async function getLocationName(lat: number, lng: number): Promise<string> {
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-      { headers: { "Accept-Language": "en" } },
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=16&addressdetails=1`,
+      {
+        headers: {
+          "Accept-Language": "en",
+          "User-Agent": "BlaBlaGoa/1.0",
+        },
+      },
     );
     const data = await response.json();
-    return (
-      data.address?.city ||
-      data.address?.town ||
-      data.address?.suburb ||
-      data.address?.state ||
-      `${lat.toFixed(4)}, ${lng.toFixed(4)}`
-    );
+    const a = data.address;
+
+    const parts = [
+      a.road || a.pedestrian || a.footway,
+      a.neighbourhood || a.suburb || a.quarter,
+      a.village || a.hamlet || a.town || a.city_district,
+      a.city || a.municipality || a.county,
+      a.state,
+    ].filter(Boolean);
+
+    return parts.length > 0
+      ? parts.join(", ")
+      : data.display_name.split(",").slice(0, 4).join(",").trim();
   } catch {
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   }
