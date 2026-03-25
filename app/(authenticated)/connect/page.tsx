@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth, useUser } from "@clerk/nextjs";
-import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@clerk/nextjs";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   updateLocation,
   updatePresence,
@@ -10,34 +10,74 @@ import {
   NearbyUser,
 } from "@/lib/api";
 
+async function getLocationName(lat: number, lng: number): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+      { headers: { "Accept-Language": "en" } },
+    );
+    const data = await response.json();
+    return (
+      data.address?.city ||
+      data.address?.town ||
+      data.address?.suburb ||
+      data.address?.state ||
+      `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+    );
+  } catch {
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+}
+
 export default function ConnectPage() {
   const { getToken } = useAuth();
-  const { user } = useUser();
 
   const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingUsers, setFetchingUsers] = useState(false);
   const [locationSet, setLocationSet] = useState(false);
   const [radius, setRadius] = useState(5);
   const [error, setError] = useState<string | null>(null);
   const [locationName, setLocationName] = useState("");
+  const radiusDebounceRef = useRef<NodeJS.Timeout>();
 
-  // Heartbeat — keeps user online while on this page
+  // Heartbeat
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
     async function heartbeat() {
-      const token = await getToken({ skipCache: true });
-      if (token) await updatePresence(token);
+      try {
+        const token = await getToken({ skipCache: true });
+        if (token) await updatePresence(token);
+      } catch {
+        // silent fail
+      }
     }
 
-    // Send presence immediately then every 30 seconds
     heartbeat();
     interval = setInterval(heartbeat, 30000);
-
     return () => clearInterval(interval);
   }, [getToken]);
 
-  // Use browser's GPS
+  // Fetch nearby users
+  const fetchNearbyUsers = useCallback(
+    async (token?: string) => {
+      setFetchingUsers(true);
+      try {
+        const t = token || (await getToken({ skipCache: true }));
+        if (!t) return;
+        const users = await getNearbyUsers(t);
+        setNearbyUsers(users);
+      } catch {
+        setError("Failed to fetch nearby users.");
+      } finally {
+        setFetchingUsers(false);
+      }
+    },
+    [getToken],
+  );
+
+  // Use GPS
   async function useCurrentLocation() {
     setError(null);
     setLoading(true);
@@ -55,7 +95,8 @@ export default function ConnectPage() {
           const token = await getToken({ skipCache: true });
           if (!token) return;
           await updateLocation(token, latitude, longitude);
-          setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          const name = await getLocationName(latitude, longitude);
+          setLocationName(name);
           setLocationSet(true);
           await fetchNearbyUsers(token);
         } catch {
@@ -66,40 +107,34 @@ export default function ConnectPage() {
       },
       () => {
         setError(
-          "Location access denied. Please allow location in your browser.",
+          "Location access denied. If you're in incognito mode, " +
+            "location is blocked by default. Please use a regular " +
+            "browser window and allow location when prompted.",
         );
         setLoading(false);
       },
     );
   }
 
-  // Fetch nearby users
-  const fetchNearbyUsers = useCallback(
-    async (token?: string) => {
-      try {
-        const t = token || (await getToken({ skipCache: true }));
-        if (!t) return;
-        const users = await getNearbyUsers(t);
-        setNearbyUsers(users);
-      } catch {
-        setError("Failed to fetch nearby users.");
-      }
-    },
-    [getToken],
-  );
-
-  // Update radius
-  async function handleRadiusChange(newRadius: number) {
+  // Radius change with debounce
+  function handleRadiusChange(newRadius: number) {
     setRadius(newRadius);
-    const token = await getToken({ skipCache: true });
-    if (!token) return;
-    await updateDiscoverySettings(token, { discovery_radius_km: newRadius });
-    if (locationSet) await fetchNearbyUsers(token);
+
+    if (radiusDebounceRef.current) {
+      clearTimeout(radiusDebounceRef.current);
+    }
+
+    radiusDebounceRef.current = setTimeout(async () => {
+      const token = await getToken({ skipCache: true });
+      if (!token) return;
+      await updateDiscoverySettings(token, { discovery_radius_km: newRadius });
+      if (locationSet) await fetchNearbyUsers(token);
+    }, 500);
   }
 
   return (
     <div className="flex gap-6 h-[calc(100vh-8rem)]">
-      {/* Left panel — controls */}
+      {/* Left panel */}
       <div className="w-72 shrink-0 bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-1">
@@ -110,7 +145,6 @@ export default function ConnectPage() {
           </p>
         </div>
 
-        {/* Location */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Your location
@@ -142,7 +176,6 @@ export default function ConnectPage() {
           </button>
         </div>
 
-        {/* Radius slider */}
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -164,14 +197,12 @@ export default function ConnectPage() {
           </div>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
             <p className="text-xs text-red-600">{error}</p>
           </div>
         )}
 
-        {/* Refresh */}
         {locationSet && (
           <button
             onClick={() => fetchNearbyUsers()}
@@ -182,7 +213,7 @@ export default function ConnectPage() {
         )}
       </div>
 
-      {/* Right panel — nearby users */}
+      {/* Right panel */}
       <div className="flex-1 bg-white border border-gray-200 rounded-2xl p-6 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -205,6 +236,10 @@ export default function ConnectPage() {
               Click "Use current location" to find people around you
             </p>
           </div>
+        ) : fetchingUsers ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : nearbyUsers.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <div className="text-4xl mb-4">🔍</div>
@@ -220,12 +255,9 @@ export default function ConnectPage() {
                 key={u.id}
                 className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer group"
               >
-                {/* Avatar */}
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
                   {u.name[0].toUpperCase()}
                 </div>
-
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-gray-900 text-sm">
@@ -237,8 +269,6 @@ export default function ConnectPage() {
                     {u.bio || "No bio yet"}
                   </p>
                 </div>
-
-                {/* Distance + action */}
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-xs font-medium text-gray-500">
                     {u.distance_km} km
