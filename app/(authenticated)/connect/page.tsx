@@ -1,8 +1,257 @@
+"use client";
+
+import { useAuth, useUser } from "@clerk/nextjs";
+import { useEffect, useState, useCallback } from "react";
+import {
+  updateLocation,
+  updatePresence,
+  getNearbyUsers,
+  updateDiscoverySettings,
+  NearbyUser,
+} from "@/lib/api";
+
 export default function ConnectPage() {
+  const { getToken } = useAuth();
+  const { user } = useUser();
+
+  const [nearbyUsers, setNearbyUsers] = useState<NearbyUser[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [locationSet, setLocationSet] = useState(false);
+  const [radius, setRadius] = useState(5);
+  const [error, setError] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState("");
+
+  // Heartbeat — keeps user online while on this page
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    async function heartbeat() {
+      const token = await getToken({ skipCache: true });
+      if (token) await updatePresence(token);
+    }
+
+    // Send presence immediately then every 30 seconds
+    heartbeat();
+    interval = setInterval(heartbeat, 30000);
+
+    return () => clearInterval(interval);
+  }, [getToken]);
+
+  // Use browser's GPS
+  async function useCurrentLocation() {
+    setError(null);
+    setLoading(true);
+
+    if (!navigator.geolocation) {
+      setError("Your browser doesn't support location.");
+      setLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const token = await getToken({ skipCache: true });
+          if (!token) return;
+          await updateLocation(token, latitude, longitude);
+          setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          setLocationSet(true);
+          await fetchNearbyUsers(token);
+        } catch {
+          setError("Failed to update location.");
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        setError(
+          "Location access denied. Please allow location in your browser.",
+        );
+        setLoading(false);
+      },
+    );
+  }
+
+  // Fetch nearby users
+  const fetchNearbyUsers = useCallback(
+    async (token?: string) => {
+      try {
+        const t = token || (await getToken({ skipCache: true }));
+        if (!t) return;
+        const users = await getNearbyUsers(t);
+        setNearbyUsers(users);
+      } catch {
+        setError("Failed to fetch nearby users.");
+      }
+    },
+    [getToken],
+  );
+
+  // Update radius
+  async function handleRadiusChange(newRadius: number) {
+    setRadius(newRadius);
+    const token = await getToken({ skipCache: true });
+    if (!token) return;
+    await updateDiscoverySettings(token, { discovery_radius_km: newRadius });
+    if (locationSet) await fetchNearbyUsers(token);
+  }
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900">Connect</h1>
-      <p className="text-gray-500 mt-2">Find people nearby — coming soon.</p>
+    <div className="flex gap-6 h-[calc(100vh-8rem)]">
+      {/* Left panel — controls */}
+      <div className="w-72 shrink-0 bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-6">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">
+            Find people nearby
+          </h2>
+          <p className="text-sm text-gray-400">
+            Set your location to see who is online around you
+          </p>
+        </div>
+
+        {/* Location */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Your location
+          </label>
+
+          {locationSet ? (
+            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
+              <span className="text-xs text-green-700 font-medium truncate">
+                {locationName}
+              </span>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+              <span className="text-xs text-gray-400">Not set</span>
+            </div>
+          )}
+
+          <button
+            onClick={useCurrentLocation}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 border border-blue-200 text-blue-600 text-sm font-medium py-2.5 rounded-xl hover:bg-blue-50 transition-colors disabled:opacity-50"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              "Use current location"
+            )}
+          </button>
+        </div>
+
+        {/* Radius slider */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Discovery radius
+            </label>
+            <span className="text-sm font-bold text-blue-600">{radius} km</span>
+          </div>
+          <input
+            type="range"
+            min="1"
+            max="50"
+            value={radius}
+            onChange={(e) => handleRadiusChange(Number(e.target.value))}
+            className="w-full accent-blue-600"
+          />
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>1 km</span>
+            <span>50 km</span>
+          </div>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+            <p className="text-xs text-red-600">{error}</p>
+          </div>
+        )}
+
+        {/* Refresh */}
+        {locationSet && (
+          <button
+            onClick={() => fetchNearbyUsers()}
+            className="w-full bg-blue-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-blue-700 transition-colors mt-auto"
+          >
+            Refresh
+          </button>
+        )}
+      </div>
+
+      {/* Right panel — nearby users */}
+      <div className="flex-1 bg-white border border-gray-200 rounded-2xl p-6 overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {locationSet
+              ? `${nearbyUsers.length} ${nearbyUsers.length === 1 ? "person" : "people"} nearby`
+              : "Set your location to see who is nearby"}
+          </h2>
+          {locationSet && (
+            <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+              Live
+            </div>
+          )}
+        </div>
+
+        {!locationSet ? (
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <div className="text-4xl mb-4">📍</div>
+            <p className="text-gray-500 text-sm max-w-xs">
+              Click "Use current location" to find people around you
+            </p>
+          </div>
+        ) : nearbyUsers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <div className="text-4xl mb-4">🔍</div>
+            <p className="text-gray-500 text-sm max-w-xs">
+              No one online within {radius} km right now. Try increasing your
+              radius.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {nearbyUsers.map((u) => (
+              <div
+                key={u.id}
+                className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer group"
+              >
+                {/* Avatar */}
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
+                  {u.name[0].toUpperCase()}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900 text-sm">
+                      {u.name}
+                    </p>
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">
+                    {u.bio || "No bio yet"}
+                  </p>
+                </div>
+
+                {/* Distance + action */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs font-medium text-gray-500">
+                    {u.distance_km} km
+                  </span>
+                  <button className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    View
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

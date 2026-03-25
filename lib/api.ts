@@ -67,6 +67,48 @@ export async function updateMyProfile(
     })
 }
 
-export async function getNearbyUsers(token: string): Promise<User[]> {
+// export async function getNearbyUsers(token: string): Promise<User[]> {
+//     return fetchWithAuth("/discover/nearby", token)
+// }
+
+
+// next round of features, related to finding and updateding about nearby users
+export interface NearbyUser {
+    id: number
+    name: string
+    bio: string | null
+    avatar_url: string | null
+    distance_km: number
+    is_online: boolean
+}
+
+export async function updateLocation(
+    token: string,
+    latitude: number,
+    longitude: number
+): Promise<void> {
+    return fetchWithAuth("/discover/me/location", token, {
+        method: "PATCH",
+        body: JSON.stringify({ latitude, longitude }),
+    })
+}
+
+export async function updatePresence(token: string): Promise<void> {
+    return fetchWithAuth("/discover/me/presence", token, {
+        method: "PATCH",
+    })
+}
+
+export async function getNearbyUsers(token: string): Promise<NearbyUser[]> {
     return fetchWithAuth("/discover/nearby", token)
+}
+
+export async function updateDiscoverySettings(
+    token: string,
+    data: { discovery_radius_km?: number; is_discoverable?: boolean }
+): Promise<User> {
+    return fetchWithAuth("/users/me", token, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+    })
 }
