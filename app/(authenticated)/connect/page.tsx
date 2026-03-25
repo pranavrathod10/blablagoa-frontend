@@ -39,7 +39,8 @@ export default function ConnectPage() {
   const [radius, setRadius] = useState(5);
   const [error, setError] = useState<string | null>(null);
   const [locationName, setLocationName] = useState("");
-  const radiusDebounceRef = useRef<NodeJS.Timeout>();
+  // const radiusDebounceRef = useRef<NodeJS.Timeout>();
+  const radiusDebounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Heartbeat
   useEffect(() => {
