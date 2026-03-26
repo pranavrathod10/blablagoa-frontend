@@ -119,3 +119,85 @@ export async function updateDiscoverySettings(
         body: JSON.stringify(data),
     })
 }
+
+
+//related to activity page
+
+export interface ConnectionRequest {
+    id: number
+    sender_id: number
+    receiver_id: number
+    message: string
+    status: string
+    created_at: string
+    expires_at: string
+    responded_at: string | null
+    sender_name?: string
+    sender_bio?: string
+    receiver_name?: string
+}
+
+export interface ChatSession {
+    id: number
+    request_id: number
+    user_one_id: number
+    user_two_id: number
+    status: string
+    started_at: string
+    expires_at: string
+    ended_at: string | null
+    other_user_name?: string
+}
+
+export interface RespondResult {
+    status: string
+    session_id?: number
+    expires_at?: string
+}
+
+export async function sendConnectionRequest(
+    token: string,
+    receiver_id: number,
+    message: string
+): Promise<ConnectionRequest> {
+    return fetchWithAuth("/connections/", token, {
+        method: "POST",
+        body: JSON.stringify({ receiver_id, message }),
+    })
+}
+
+export async function getPendingRequests(
+    token: string
+): Promise<ConnectionRequest[]> {
+    return fetchWithAuth("/connections/pending", token)
+}
+
+export async function getSentRequests(
+    token: string
+): Promise<ConnectionRequest[]> {
+    return fetchWithAuth("/connections/sent", token)
+}
+
+export async function respondToRequest(
+    token: string,
+    request_id: number,
+    action: "accept" | "reject"
+): Promise<RespondResult> {
+    return fetchWithAuth(`/connections/${request_id}/respond`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ action }),
+    })
+}
+
+export async function getActiveSessions(
+    token: string
+): Promise<ChatSession[]> {
+    return fetchWithAuth("/sessions/active", token)
+}
+
+export async function getSession(
+    token: string,
+    session_id: number
+): Promise<ChatSession> {
+    return fetchWithAuth(`/sessions/${session_id}`, token)
+}

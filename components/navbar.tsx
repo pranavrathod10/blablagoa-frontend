@@ -15,49 +15,39 @@ export default function Navbar() {
       .join("")
       .toUpperCase() || "?";
 
+  const links = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/connect", label: "Connect" },
+    { href: "/activity", label: "Activity" },
+    { href: "/causerie", label: "Causerie" },
+    { href: "/profile", label: "Profile" },
+  ];
+
   return (
     <nav className="border-b border-gray-200 bg-white sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo → goes to landing page */}
-        <Link href="/" className="text-lg font-bold text-blue-600">
+        <Link href="/" className="text-lg font-bold text-blue-600 shrink-0">
           BlaBlaGoa
         </Link>
 
-        <div className="flex items-center gap-8">
-          <Link
-            href="/dashboard"
-            className={`text-sm font-medium transition-colors ${
-              pathname === "/dashboard"
-                ? "text-blue-600"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/connect"
-            className={`text-sm font-medium transition-colors ${
-              pathname === "/connect"
-                ? "text-blue-600"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            Connect
-          </Link>
-          <Link
-            href="/profile"
-            className={`text-sm font-medium transition-colors ${
-              pathname === "/profile"
-                ? "text-blue-600"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            My Profile
-          </Link>
+        <div className="flex items-center gap-6">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`text-sm font-medium transition-colors ${
+                pathname === link.href
+                  ? "text-blue-600"
+                  : "text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">
             {initials}
           </div>
           <SignOutButton>
