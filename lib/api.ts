@@ -57,9 +57,16 @@ export async function getMyProfile(token: string): Promise<User> {
     return fetchWithAuth("/users/me", token)
 }
 
+interface UserUpdatePayload {
+    name?: string
+    bio?: string | null
+    date_of_birth?: string | null
+    is_discoverable?: boolean
+}
+
 export async function updateMyProfile(
     token: string,
-    data: Partial<User>
+    data: UserUpdatePayload
 ): Promise<User> {
     return fetchWithAuth("/users/me", token, {
         method: "PATCH",
