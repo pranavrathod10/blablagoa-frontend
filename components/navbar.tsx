@@ -18,11 +18,22 @@ export default function Navbar() {
   return (
     <nav className="border-b border-gray-200 bg-white sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/dashboard" className="text-lg font-bold text-blue-600">
+        {/* Logo → goes to landing page */}
+        <Link href="/" className="text-lg font-bold text-blue-600">
           BlaBlaGoa
         </Link>
 
         <div className="flex items-center gap-8">
+          <Link
+            href="/dashboard"
+            className={`text-sm font-medium transition-colors ${
+              pathname === "/dashboard"
+                ? "text-blue-600"
+                : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            Dashboard
+          </Link>
           <Link
             href="/connect"
             className={`text-sm font-medium transition-colors ${
