@@ -201,3 +201,16 @@ export async function getSession(
 ): Promise<ChatSession> {
     return fetchWithAuth(`/sessions/${session_id}`, token)
 }
+
+
+//related to chat 
+export function createChatWebSocket(
+    sessionId: number,
+    token: string
+): WebSocket {
+    const wsBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000")
+        .replace("https://", "wss://")
+        .replace("http://", "ws://")
+
+    return new WebSocket(`${wsBase}/ws/session/${sessionId}?token=${token}`)
+}
