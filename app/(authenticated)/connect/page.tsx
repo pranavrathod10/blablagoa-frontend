@@ -163,11 +163,25 @@ export default function ConnectPage() {
           </label>
 
           {locationSet ? (
-            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full shrink-0" />
-              <span className="text-xs text-green-700 font-medium truncate">
-                {locationName}
-              </span>
+            <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full shrink-0 mt-1" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-green-700 font-medium leading-relaxed break-words">
+                    {locationName}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setLocationSet(false);
+                    setLocationName("");
+                    setNearbyUsers([]);
+                  }}
+                  className="text-xs text-gray-400 hover:text-red-500 shrink-0 ml-1"
+                >
+                  Change
+                </button>
+              </div>
             </div>
           ) : (
             <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
