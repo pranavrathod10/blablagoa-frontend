@@ -13,6 +13,9 @@ interface ChatMessage {
   content?: string;
   sent_at?: string;
   message?: string;
+  your_user_id?: number;
+  user_id?: number;
+  user_name?: string;
 }
 
 function Countdown({
