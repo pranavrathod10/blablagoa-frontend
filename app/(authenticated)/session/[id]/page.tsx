@@ -149,6 +149,10 @@ export default function SessionPage() {
 
         ws.onclose = () => {
           setConnected(false);
+          // Try to reconnect after 2 seconds if session not ended
+          if (!sessionEnded) {
+            setTimeout(() => init(), 2000);
+          }
         };
       } catch {
         router.push("/causerie");
