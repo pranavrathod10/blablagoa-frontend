@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider telemetry={false}>
       <html lang="en" className={inter.variable}>
         <body className="font-sans antialiased">{children}</body>
       </html>

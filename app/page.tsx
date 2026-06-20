@@ -10,30 +10,31 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Navbar */}
-      <nav className="border-b border-gray-100 px-6 h-16 flex items-center justify-between max-w-6xl mx-auto w-full">
-        <span className="text-lg font-bold text-blue-600">BlaBlaGoa</span>
+      <nav className="border-b border-gray-100 px-4 sm:px-6 h-16 flex items-center justify-between max-w-6xl mx-auto w-full gap-3">
+        <span className="text-lg font-bold text-blue-600 shrink-0">BlaBlaGoa</span>
 
         {/* Show different nav based on auth state */}
         {isLoaded &&
           (isSignedIn ? (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <div className="hidden sm:flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
                   {user.fullName?.[0] || user.firstName?.[0] || "?"}
                 </div>
-                <span className="text-sm text-gray-700 font-medium">
+                <span className="text-sm text-gray-700 font-medium truncate">
                   {user.firstName || user.fullName}
                 </span>
               </div>
               <Link
                 href="/dashboard"
-                className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="text-sm bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
               >
-                Go to dashboard
+                <span className="sm:hidden">Dashboard</span>
+                <span className="hidden sm:inline">Go to dashboard</span>
               </Link>
             </div>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <Link
                 href="/sign-in"
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
@@ -42,7 +43,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/sign-up"
-                className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="text-sm bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
               >
                 Get started
               </Link>
@@ -50,16 +51,16 @@ export default function Home() {
           ))}
       </nav>
 
-      {/* Split screen — fills remaining height */}
-      <div className="flex flex-1">
+      {/* Split screen — stacks on mobile */}
+      <div className="flex flex-col lg:flex-row flex-1">
         {/* Left — hero */}
-        <div className="flex-1 flex flex-col justify-center px-12 py-12 max-w-2xl">
-          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-xs font-medium px-3 py-1 rounded-full mb-8 w-fit">
+        <div className="flex-1 flex flex-col justify-center px-6 sm:px-10 lg:px-12 py-10 sm:py-12 lg:max-w-2xl">
+          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-xs font-medium px-3 py-1 rounded-full mb-6 sm:mb-8 w-fit">
             <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
             People nearby are online right now
           </div>
 
-          <h1 className="text-5xl font-bold text-gray-900 leading-tight mb-5">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight mb-5">
             The right person
             <br />
             is nearby.
@@ -67,38 +68,38 @@ export default function Home() {
             <span className="text-blue-600">Say hello.</span>
           </h1>
 
-          <p className="text-lg text-gray-500 mb-8 leading-relaxed max-w-md">
+          <p className="text-base sm:text-lg text-gray-500 mb-8 leading-relaxed max-w-md">
             Find real people around you. Send them a message with your reason.
             Chat for 5 minutes. No history, no pressure.
           </p>
 
           {/* CTA buttons */}
           {isSignedIn ? (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               <Link
                 href="/connect"
-                className="bg-blue-600 text-white px-7 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm"
+                className="bg-blue-600 text-white px-7 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm text-center"
               >
                 Find someone nearby
               </Link>
               <Link
                 href="/dashboard"
-                className="text-gray-500 hover:text-gray-900 px-7 py-3 rounded-xl font-medium transition-colors text-sm border border-gray-200"
+                className="text-gray-500 hover:text-gray-900 px-7 py-3 rounded-xl font-medium transition-colors text-sm border border-gray-200 text-center"
               >
                 My dashboard
               </Link>
             </div>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               <Link
                 href="/sign-up"
-                className="bg-blue-600 text-white px-7 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm"
+                className="bg-blue-600 text-white px-7 py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm text-center"
               >
                 Get started free
               </Link>
               <Link
                 href="/sign-in"
-                className="text-gray-500 hover:text-gray-900 px-7 py-3 rounded-xl font-medium transition-colors text-sm border border-gray-200"
+                className="text-gray-500 hover:text-gray-900 px-7 py-3 rounded-xl font-medium transition-colors text-sm border border-gray-200 text-center"
               >
                 Sign in
               </Link>
@@ -106,12 +107,12 @@ export default function Home() {
           )}
 
           {/* Use cases */}
-          <div className="mt-12">
+          <div className="mt-10 sm:mt-12">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
               People use it for
             </p>
-            <div className="flex gap-3">
-              <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-center">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-gray-50 border border-gray-100 rounded-xl px-3 sm:px-4 py-3 text-center">
                 <div className="text-xl mb-1">✈️</div>
                 <p className="text-xs text-gray-500 leading-snug">
                   Sharing a cab
@@ -119,14 +120,14 @@ export default function Home() {
                   at the airport
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-center">
+              <div className="bg-gray-50 border border-gray-100 rounded-xl px-3 sm:px-4 py-3 text-center">
                 <div className="text-xl mb-1">🏙️</div>
                 <p className="text-xs text-gray-500 leading-snug">
                   Help in
                   <br />a new city
                 </p>
               </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-center">
+              <div className="bg-gray-50 border border-gray-100 rounded-xl px-3 sm:px-4 py-3 text-center">
                 <div className="text-xl mb-1">☕</div>
                 <p className="text-xs text-gray-500 leading-snug">
                   Meeting someone
@@ -138,7 +139,7 @@ export default function Home() {
           </div>
 
           {/* Stats */}
-          <div className="flex gap-8 mt-10">
+          <div className="flex gap-6 sm:gap-8 mt-10">
             <div>
               <div className="text-xl font-bold text-gray-900">5 min</div>
               <div className="text-xs text-gray-400">per session</div>
@@ -154,11 +155,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="w-px bg-gray-100 my-8" />
+        {/* Divider — vertical only on desktop */}
+        <div className="hidden lg:block w-px bg-gray-100 my-8" />
 
         {/* Right — mock request card */}
-        <div className="flex-1 flex flex-col justify-center items-center px-12 py-12 bg-gray-50">
+        <div className="flex-1 flex flex-col justify-center items-center px-6 sm:px-10 lg:px-12 py-10 sm:py-12 bg-gray-50 border-t lg:border-t-0 border-gray-100">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-6">
             What it looks like
           </p>
@@ -184,8 +185,8 @@ export default function Home() {
 
             <div className="bg-gray-50 rounded-xl p-3 mb-3">
               <p className="text-sm text-gray-700 leading-relaxed">
-                "Just landed — heading to the city. Want to share a cab? Saves
-                us both."
+                &ldquo;Just landed - heading to the city. Want to share a cab? Saves
+                us both.&rdquo;
               </p>
             </div>
 

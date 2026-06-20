@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
+  getMyProfile,
   updateLocation,
   updatePresence,
   getNearbyUsers,
@@ -56,6 +57,7 @@ export default function ConnectPage() {
   const [radius, setRadius] = useState(5);
   const [error, setError] = useState<string | null>(null);
   const [locationName, setLocationName] = useState("");
+  const [hydrating, setHydrating] = useState(true);
   const radiusDebounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Modal + request state
@@ -72,8 +74,6 @@ export default function ConnectPage() {
 
   // Heartbeat — keeps user online while on this page
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-
     async function heartbeat() {
       try {
         const token = await getToken({ skipCache: true });
@@ -84,7 +84,7 @@ export default function ConnectPage() {
     }
 
     heartbeat();
-    interval = setInterval(heartbeat, 30000);
+    const interval = setInterval(heartbeat, 30000);
     return () => clearInterval(interval);
   }, [getToken]);
 
@@ -123,6 +123,43 @@ export default function ConnectPage() {
     },
     [getToken],
   );
+
+  // Hydrate saved location + radius from the backend on mount so the
+  // Connect page "remembers" the user's settings across navigation.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      try {
+        const token = await getToken({ skipCache: true });
+        if (!token) return;
+
+        const me = await getMyProfile(token);
+        if (cancelled) return;
+
+        if (typeof me.discovery_radius_km === "number") {
+          setRadius(me.discovery_radius_km);
+        }
+
+        if (me.latitude != null && me.longitude != null) {
+          setLocationSet(true);
+          const name = await getLocationName(me.latitude, me.longitude);
+          if (cancelled) return;
+          setLocationName(name);
+          await fetchNearbyUsers(token);
+        }
+      } catch {
+        // Silent — the user can still set their location manually.
+      } finally {
+        if (!cancelled) setHydrating(false);
+      }
+    }
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken, fetchNearbyUsers]);
 
   // Use GPS
   async function useCurrentLocation() {
@@ -188,8 +225,9 @@ export default function ConnectPage() {
         requestMessage.trim(),
       );
       setRequestSent(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to send request.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to send request.";
+      setError(message);
     } finally {
       setSendingRequest(false);
     }
@@ -221,9 +259,9 @@ export default function ConnectPage() {
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-8rem)]">
+    <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:h-[calc(100vh-8rem)]">
       {/* Left panel — controls */}
-      <div className="w-72 shrink-0 bg-white border border-gray-200 rounded-2xl p-6 flex flex-col gap-6">
+      <div className="w-full md:w-72 md:shrink-0 bg-white border border-gray-200 rounded-2xl p-4 md:p-6 flex flex-col gap-5 md:gap-6">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-1">
             Find people nearby
@@ -239,7 +277,13 @@ export default function ConnectPage() {
             Your location
           </label>
 
-          {locationSet ? (
+          {hydrating ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+              <span className="text-xs text-gray-400">
+                Checking your saved location...
+              </span>
+            </div>
+          ) : locationSet ? (
             <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2">
               <div className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full shrink-0 mt-1" />
@@ -320,12 +364,14 @@ export default function ConnectPage() {
       </div>
 
       {/* Right panel — nearby users */}
-      <div className="flex-1 bg-white border border-gray-200 rounded-2xl p-6 overflow-y-auto">
+      <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-2xl p-4 md:p-6 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
-            {locationSet
-              ? `${nearbyUsers.length} ${nearbyUsers.length === 1 ? "person" : "people"} nearby`
-              : "Set your location to see who is nearby"}
+            {hydrating
+              ? "Finding people near you..."
+              : locationSet
+                ? `${nearbyUsers.length} ${nearbyUsers.length === 1 ? "person" : "people"} nearby`
+                : "Set your location to see who is nearby"}
           </h2>
           {locationSet && (
             <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
@@ -335,11 +381,15 @@ export default function ConnectPage() {
           )}
         </div>
 
-        {!locationSet ? (
+        {hydrating ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : !locationSet ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <div className="text-4xl mb-4">📍</div>
             <p className="text-gray-500 text-sm max-w-xs">
-              Click "Use current location" to find people around you
+              Click &ldquo;Use current location&rdquo; to find people around you
             </p>
           </div>
         ) : fetchingUsers ? (
@@ -367,27 +417,27 @@ export default function ConnectPage() {
                   setRequestSent(false);
                   setRequestMessage("");
                 }}
-                className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer group"
+                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border border-gray-100 rounded-xl hover:border-blue-200 hover:bg-blue-50 transition-all cursor-pointer group"
               >
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
                   {u.name[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-semibold text-gray-900 text-sm">
+                    <p className="font-semibold text-gray-900 text-sm truncate">
                       {u.name}
                     </p>
-                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full shrink-0" />
                   </div>
                   <p className="text-xs text-gray-400 mt-0.5 truncate">
                     {u.bio || "No bio yet"}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs font-medium text-gray-500">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  <span className="text-xs font-medium text-gray-500 whitespace-nowrap">
                     {u.distance_km} km
                   </span>
-                  <span className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg">
+                  <span className="bg-blue-600 text-white text-xs font-medium px-2.5 sm:px-3 py-1.5 rounded-lg">
                     View
                   </span>
                 </div>
@@ -397,9 +447,9 @@ export default function ConnectPage() {
         )}
       </div>
 
-      {/* Incoming requests — fixed bottom right */}
+      {/* Incoming requests — bottom of screen (full width on mobile) */}
       {pendingRequests.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50 space-y-3 max-w-sm w-full">
+        <div className="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-50 space-y-3 sm:max-w-sm sm:w-full max-h-[60vh] overflow-y-auto">
           {pendingRequests.map((req) => (
             <div
               key={req.id}
@@ -423,7 +473,7 @@ export default function ConnectPage() {
               </div>
               <div className="bg-gray-50 rounded-xl p-3 mb-3">
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  "{req.message}"
+                  &ldquo;{req.message}&rdquo;
                 </p>
               </div>
               <div className="flex gap-2">

@@ -37,20 +37,19 @@ function SessionCard({
   onClick: () => void;
 }) {
   const timeLeft = useCountdown(session.expires_at);
-  const isAlmostDone =
-    new Date(session.expires_at).getTime() - Date.now() < 60000;
+  const isAlmostDone = timeLeft.startsWith("00:") && timeLeft !== "00:00";
 
   return (
     <div
       onClick={onClick}
-      className="bg-white border border-gray-200 rounded-2xl p-5 cursor-pointer hover:border-blue-200 hover:bg-blue-50 transition-all group"
+      className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 cursor-pointer hover:border-blue-200 hover:bg-blue-50 transition-all group"
     >
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
           {session.other_user_name?.[0]?.toUpperCase() || "?"}
         </div>
-        <div className="flex-1">
-          <p className="font-semibold text-gray-900">
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-gray-900 truncate">
             {session.other_user_name || "Someone"}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
@@ -59,7 +58,7 @@ function SessionCard({
         </div>
         <div className="text-right shrink-0">
           <div
-            className={`text-2xl font-bold font-mono tabular-nums ${
+            className={`text-xl sm:text-2xl font-bold font-mono tabular-nums ${
               isAlmostDone ? "text-red-500" : "text-blue-600"
             }`}
           >
@@ -113,7 +112,7 @@ export default function CauseriePage() {
       </div>
 
       {sessions.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-2xl p-16 text-center">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 sm:p-16 text-center">
           <p className="text-3xl mb-4">💬</p>
           <p className="font-medium text-gray-900 mb-1">
             No active conversations

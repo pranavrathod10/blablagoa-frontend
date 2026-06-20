@@ -140,16 +140,16 @@ export default function ProfilePage() {
       </div>
 
       {/* Live preview */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+      <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
           Preview
         </p>
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-2xl shrink-0">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl sm:text-2xl shrink-0">
             {name?.[0]?.toUpperCase() || "?"}
           </div>
-          <div className="flex-1">
-            <p className="font-semibold text-gray-900">
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 truncate">
               {name || "Your name"}
               {dob && getAge(dob) !== null && (
                 <span className="font-normal text-gray-400 text-sm ml-2">
@@ -157,11 +157,11 @@ export default function ProfilePage() {
                 </span>
               )}
             </p>
-            <p className="text-sm text-gray-400 mt-0.5">
+            <p className="text-sm text-gray-400 mt-0.5 truncate">
               {bio || "No bio yet"}
             </p>
           </div>
-          <div>
+          <div className="shrink-0">
             {discoverable ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
@@ -178,7 +178,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Edit form */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-5">
+      <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 space-y-5">
         <h2 className="text-base font-semibold text-gray-900">Edit details</h2>
 
         {/* Name */}
@@ -304,25 +304,25 @@ export default function ProfilePage() {
       </div>
 
       {/* Account info */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-3">
+      <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 space-y-3">
         <h2 className="text-base font-semibold text-gray-900">Account info</h2>
-        <div className="flex justify-between items-center py-2 border-b border-gray-100">
-          <span className="text-sm text-gray-500">Email</span>
-          <span className="text-sm font-medium text-gray-900">
+        <div className="flex justify-between items-center gap-3 py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-500 shrink-0">Email</span>
+          <span className="text-sm font-medium text-gray-900 truncate">
             {profile?.email}
           </span>
         </div>
-        <div className="flex justify-between items-center py-2 border-b border-gray-100">
-          <span className="text-sm text-gray-500">Discovery radius</span>
-          <span className="text-sm font-medium text-gray-900">
+        <div className="flex justify-between items-center gap-3 py-2 border-b border-gray-100">
+          <span className="text-sm text-gray-500 shrink-0">Discovery radius</span>
+          <span className="text-sm font-medium text-gray-900 text-right">
             {profile?.discovery_radius_km} km
-            <span className="text-gray-400 font-normal ml-1">
+            <span className="text-gray-400 font-normal ml-1 hidden sm:inline">
               (set on Connect page)
             </span>
           </span>
         </div>
-        <div className="flex justify-between items-center py-2">
-          <span className="text-sm text-gray-500">Member since</span>
+        <div className="flex justify-between items-center gap-3 py-2">
+          <span className="text-sm text-gray-500 shrink-0">Member since</span>
           <span className="text-sm font-medium text-gray-900">
             {profile?.created_at
               ? new Date(profile.created_at).toLocaleDateString("en-IN", {

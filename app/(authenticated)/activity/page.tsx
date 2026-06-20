@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getPendingRequests,
@@ -47,7 +47,7 @@ export default function ActivityPage() {
   const [loading, setLoading] = useState(true);
   const [responding, setResponding] = useState<number | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const token = await getToken({ skipCache: true });
       if (!token) return;
@@ -62,13 +62,13 @@ export default function ActivityPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [getToken]);
 
   useEffect(() => {
     load();
     const interval = setInterval(load, 10000);
     return () => clearInterval(interval);
-  }, [getToken]);
+  }, [load]);
 
   async function handleRespond(requestId: number, action: "accept" | "reject") {
     setResponding(requestId);
@@ -110,10 +110,10 @@ export default function ActivityPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-full sm:w-fit">
         <button
           onClick={() => setTab("received")}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === "received"
               ? "bg-white text-gray-900 shadow-sm"
               : "text-gray-500 hover:text-gray-700"
@@ -128,7 +128,7 @@ export default function ActivityPage() {
         </button>
         <button
           onClick={() => setTab("sent")}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
             tab === "sent"
               ? "bg-white text-gray-900 shadow-sm"
               : "text-gray-500 hover:text-gray-700"
@@ -151,14 +151,14 @@ export default function ActivityPage() {
             received.map((req) => (
               <div
                 key={req.id}
-                className="bg-white border border-gray-200 rounded-2xl p-5"
+                className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0">
                     {req.sender_name?.[0]?.toUpperCase() || "?"}
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
                       {req.sender_name}
                     </p>
                     <p className="text-xs text-gray-400">
@@ -168,8 +168,8 @@ export default function ActivityPage() {
                 </div>
 
                 <div className="bg-gray-50 rounded-xl p-3 mb-4">
-                  <p className="text-sm text-gray-700 leading-relaxed">
-                    "{req.message}"
+                  <p className="text-sm text-gray-700 leading-relaxed break-words">
+                    &ldquo;{req.message}&rdquo;
                   </p>
                 </div>
 
@@ -201,22 +201,22 @@ export default function ActivityPage() {
           {sent.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
               <p className="text-gray-400 text-sm">
-                You haven't sent any requests yet
+                You haven&apos;t sent any requests yet
               </p>
             </div>
           ) : (
             sent.map((req) => (
               <div
                 key={req.id}
-                className="bg-white border border-gray-200 rounded-2xl p-5"
+                className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold shrink-0">
                       {req.receiver_name?.[0]?.toUpperCase() || "?"}
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
                         {req.receiver_name || "User"}
                       </p>
                       <p className="text-xs text-gray-400">
@@ -225,15 +225,15 @@ export default function ActivityPage() {
                     </div>
                   </div>
                   <span
-                    className={`text-xs font-medium px-2.5 py-1 rounded-full border ${statusColors[req.status] || statusColors.expired}`}
+                    className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${statusColors[req.status] || statusColors.expired}`}
                   >
                     {req.status}
                   </span>
                 </div>
 
                 <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    "{req.message}"
+                  <p className="text-sm text-gray-600 leading-relaxed break-words">
+                    &ldquo;{req.message}&rdquo;
                   </p>
                 </div>
 
