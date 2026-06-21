@@ -54,7 +54,7 @@ function Countdown({
 
   return (
     <div
-      className={`text-3xl font-bold font-mono tabular-nums transition-colors ${
+      className={`text-2xl sm:text-3xl font-bold font-mono tabular-nums transition-colors ${
         urgent ? "text-red-500" : "text-blue-600"
       }`}
     >
@@ -80,6 +80,11 @@ export default function SessionPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionEndedRef = useRef(false);
+
+  useEffect(() => {
+    sessionEndedRef.current = sessionEnded;
+  }, [sessionEnded]);
 
   // Auto scroll to bottom when new message arrives
   useEffect(() => {
@@ -150,7 +155,7 @@ export default function SessionPage() {
         ws.onclose = () => {
           setConnected(false);
           // Try to reconnect after 2 seconds if session not ended
-          if (!sessionEnded) {
+          if (!sessionEndedRef.current) {
             setTimeout(() => init(), 2000);
           }
         };
@@ -196,8 +201,8 @@ export default function SessionPage() {
   // Session ended screen
   if (sessionEnded) {
     return (
-      <div className="max-w-md mx-auto mt-20 text-center">
-        <div className="bg-white border border-gray-200 rounded-2xl p-10">
+      <div className="max-w-md mx-auto mt-12 sm:mt-20 text-center px-4 sm:px-0">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-10">
           <div className="text-5xl mb-6">⏱️</div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
             Session ended
@@ -208,7 +213,7 @@ export default function SessionPage() {
           <p className="text-gray-400 text-xs mb-8">
             All messages have been deleted.
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => router.push("/connect")}
               className="flex-1 bg-blue-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
@@ -228,21 +233,22 @@ export default function SessionPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+    <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
       {/* Header */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 mb-3 sm:mb-4 flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => router.push("/causerie")}
-            className="text-gray-400 hover:text-gray-600 text-sm"
+            className="text-gray-400 hover:text-gray-600 text-lg shrink-0 p-1"
+            aria-label="Back"
           >
             ←
           </button>
           <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0">
             {otherUserName[0]?.toUpperCase() || "?"}
           </div>
-          <div>
-            <p className="font-semibold text-gray-900 text-sm">
+          <div className="min-w-0">
+            <p className="font-semibold text-gray-900 text-sm truncate">
               {otherUserName}
             </p>
             <div className="flex items-center gap-1.5">
@@ -260,18 +266,18 @@ export default function SessionPage() {
 
         {/* Timer */}
         {session && (
-          <div className="text-center">
+          <div className="text-center shrink-0">
             <Countdown
               expiresAt={session.expires_at}
               onExpire={handleSessionEnd}
             />
-            <p className="text-xs text-gray-400 mt-0.5">remaining</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">remaining</p>
           </div>
         )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 bg-white border border-gray-200 rounded-2xl p-4 overflow-y-auto mb-4">
+      <div className="flex-1 min-h-0 bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 overflow-y-auto mb-3 sm:mb-4">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-400 text-sm">
@@ -300,13 +306,15 @@ export default function SessionPage() {
                   className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md ${
+                    className={`max-w-[80%] sm:max-w-xs lg:max-w-md ${
                       isMe
                         ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm"
                         : "bg-gray-100 text-gray-900 rounded-2xl rounded-tl-sm"
-                    } px-4 py-2.5`}
+                    } px-3.5 sm:px-4 py-2 sm:py-2.5`}
                   >
-                    <p className="text-sm leading-relaxed">{msg.content}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                      {msg.content}
+                    </p>
                     {msg.sent_at && (
                       <p
                         className={`text-xs mt-1 ${
@@ -329,7 +337,7 @@ export default function SessionPage() {
       </div>
 
       {/* Input */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-3 flex gap-3 shrink-0">
+      <div className="bg-white border border-gray-200 rounded-2xl p-2.5 sm:p-3 flex gap-2 sm:gap-3 shrink-0">
         <input
           ref={inputRef}
           type="text"
@@ -339,12 +347,12 @@ export default function SessionPage() {
           placeholder="Type a message..."
           maxLength={500}
           disabled={!connected || sessionEnded}
-          className="flex-1 text-sm text-gray-900 placeholder-gray-400 focus:outline-none disabled:opacity-50"
+          className="flex-1 min-w-0 text-base sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none disabled:opacity-50 px-2"
         />
         <button
           onClick={sendMessage}
           disabled={!input.trim() || !connected || sessionEnded}
-          className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0"
         >
           Send
         </button>
